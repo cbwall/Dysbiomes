@@ -26,6 +26,24 @@ if (!require("pacman")) install.packages("pacman") # for rapid install if not in
 # use pacman to load all the packages you are missing!
 pacman::p_load('knitr', 'lme4', 'lmerTest', 'tidyverse', 'magrittr', 'effects', 'plyr', 'dplyr', 'plotrix', 'car',"gridExtra", "cowplot", "tools", "mgcv", "gratia", "MASS", "stats", "tidymv", "sjstats", "coin", "emmeans")
 
+
+Fig.formatting<-(theme_classic()) +
+  theme(text=element_text(size=10),
+        axis.line=element_blank(),
+        legend.text.align = 0,
+        legend.text=element_text(size=10),
+        #legend.title = element_blank(),
+        panel.border = element_rect(fill=NA, colour = "black", size=1),
+        aspect.ratio=1, 
+        axis.ticks.length=unit(0.25, "cm"),
+        axis.text.y=element_text(
+          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=10), 
+        axis.text.x=element_text(
+          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=8)) +
+  theme(legend.key.size = unit(0.4, "cm")) +
+  theme(aspect.ratio=1.3) +
+  theme(panel.spacing=unit(c(0, 0, 0, 0), "cm"))
+
 ```
 
 ## DYSBIOMES!
@@ -36,25 +54,32 @@ YSI<-read.csv("data/YSI_2023_tanks.csv")
 
 # fix date
 YSI$Date<-as.character(YSI$Date)
-YSI$Date<-as.POSIXct(YSI$Date, format="%m/%d/%Y")
+YSI$Date<-as.POSIXct(YSI$Date, format="%m/%d/%y")
 YSI$Date<-as.Date(YSI$Date, format="%m/%d/%Y")
 
 make.fac<-c("Project.Name", "Time.point", "Tank.ID", "Nutrients", "Site", "Treatment")
 YSI[make.fac] <- lapply(YSI[make.fac], factor) # make all these factors
 
-####### Separate dataframe for each project
-Dysbiomes<-YSI[(YSI$Project.Name=="Dysbiomes"),]
-```
 
-### T0.5
-```{r YSI DysT05}
-####### Time 0.5 change in O2 ################
+
+####### Separate dataframe for each project
+# Dysbiomes! And set structure
+Dysbiomes<-YSI[(YSI$Project.Name=="Dysbiomes"),]
 Dys.YSI<-Dysbiomes
 Dys.YSI$Nutrients<-droplevels(Dys.YSI$Nutrients)
 
 # rename one level
 names(Dys.YSI)[names(Dys.YSI) == "Site"] <- "Color"
 Dys.YSI$Color<-droplevels(Dys.YSI$Color)
+
+Dys.YSI$Nutrients<-factor(Dys.YSI$Nutrients, levels=c("POM", "Wood", "Plant"))
+Dys.YSI$Color<-factor(Dys.YSI$Color, levels=c("Gray", "Red", "Yellow", "Blue", "Orange"))
+Dys.YSI$Treatment<-factor(Dys.YSI$Treatment, levels=c("POM", "Wood", "Grass", "Willow", "Aspen"))
+```
+
+### T0.5
+```{r YSI DysT05}
+####### Time 0.5 change in O2 ################
 
 #separate time points
 Dys.YSI.T05<- Dys.YSI[(Dys.YSI$Time.point=="T0.5"),]
@@ -85,32 +110,9 @@ T05.O2<- mutate(T05.O2,
 Time 0.5 plot
 ```{r Dysb T0.5 DO plot}
 ########## 
-Fig.formatting<-(theme_classic()) +
-  theme(text=element_text(size=10),
-        axis.line=element_blank(),
-        legend.text.align = 0,
-        legend.text=element_text(size=10),
-        #legend.title = element_blank(),
-        panel.border = element_rect(fill=NA, colour = "black", size=1),
-        aspect.ratio=1, 
-        axis.ticks.length=unit(0.25, "cm"),
-        axis.text.y=element_text(
-          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=10), 
-        axis.text.x=element_text(
-          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=8)) +
-  theme(legend.key.size = unit(0.4, "cm")) +
-  theme(aspect.ratio=1.3) +
-  theme(panel.spacing=unit(c(0, 0, 0, 0), "cm"))
-
-#########################################################
-############################################################################
-###############################################################################################
 
 # Time 0.5 plots
 #################
-T05.O2$Nutrients<-factor(T05.O2$Nutrients, levels=c("POM", "Wood", "Plant"))
-T05.O2$Color<-factor(T05.O2$Color, levels=c("Gray", "Red", "Yellow", "Blue", "Orange"))
-T05.O2$Treatment<-factor(T05.O2$Treatment, levels=c("POM", "Wood", "Grass", "Willow", "Aspen"))
 
 T05.PM1<-ggplot(T05.O2, aes(x=Treatment, y=dusk1, color=Treatment, fill=Treatment)) + 
   geom_boxplot(alpha=0.2) +
@@ -120,7 +122,7 @@ T05.PM1<-ggplot(T05.O2, aes(x=Treatment, y=dusk1, color=Treatment, fill=Treatmen
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T05.dusk1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Detritus Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -132,7 +134,7 @@ T05.AM1<-ggplot(T05.O2, aes(x=Treatment, y=dawn1, color=Treatment, fill=Treatmen
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T05.dawn1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Detritus Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -144,7 +146,7 @@ T05.PM2<-ggplot(T05.O2, aes(x=Treatment, y=dusk2, color=Treatment, fill=Treatmen
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T05.dusk2")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Detritus Type") + 
   Fig.formatting + theme(legend.position = "none")
 
@@ -172,7 +174,7 @@ NEP.T05<-ggplot(T05.O2, aes(x=Treatment, y=NEP, color=Treatment, fill=Treatment)
   scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Production (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-20, 50)) +
+  coord_cartesian(ylim=c(-20, 80)) +
   xlab("Detritus Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -185,7 +187,7 @@ NER.T05<-ggplot(T05.O2, aes(x=Treatment, y=NER, color=Treatment, fill=Treatment)
   scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Respiration (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-40, 20)) +
+  coord_cartesian(ylim=c(-80, 20)) +
   xlab("Detritus Type") +
   Fig.formatting
 
@@ -235,10 +237,7 @@ Time 1 plot
 ########## 
 
 # Time 1 plots
-#################
-T1.O2$Nutrients<-factor(T1.O2$Nutrients, levels=c("POM", "Wood", "Plant"))
-T1.O2$Color<-factor(T1.O2$Color, levels=c("Gray", "Red", "Yellow", "Blue", "Orange"))
-T1.O2$Treatment<-factor(T1.O2$Treatment, levels=c("POM", "Wood", "Grass", "Willow", "Aspen"))
+############
 
 T1.PM1<-ggplot(T1.O2, aes(x=Treatment, y=dusk1, color=Treatment, fill=Treatment)) + 
   geom_boxplot(alpha=0.2) +
@@ -248,7 +247,7 @@ T1.PM1<-ggplot(T1.O2, aes(x=Treatment, y=dusk1, color=Treatment, fill=Treatment)
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T1.dusk1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Detritus Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -260,7 +259,7 @@ T1.AM1<-ggplot(T1.O2, aes(x=Treatment, y=dawn1, color=Treatment, fill=Treatment)
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T1.dawn1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Detritus Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -272,7 +271,7 @@ T1.PM2<-ggplot(T1.O2, aes(x=Treatment, y=dusk2, color=Treatment, fill=Treatment)
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T1.dusk2")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Detritus Type") + 
   Fig.formatting + theme(legend.position = "none")
 
@@ -300,7 +299,7 @@ NEP.T1<-ggplot(T1.O2, aes(x=Treatment, y=NEP, color=Treatment, fill=Treatment)) 
   scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Production (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-20, 50)) +
+  coord_cartesian(ylim=c(-20, 80)) +
   xlab("Detritus Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -313,7 +312,7 @@ NER.T1<-ggplot(T1.O2, aes(x=Treatment, y=NER, color=Treatment, fill=Treatment)) 
   scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Respiration (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-40, 20)) +
+  coord_cartesian(ylim=c(-80, 20)) +
   xlab("Detritus Type") +
   Fig.formatting
 
@@ -324,6 +323,131 @@ O2.change.T1<-plot_grid(
   rel_widths = c(8,8), ncol=2)
 
 ggsave("figures/Dysb.O2.change.T1.pdf", height=5, width=8)
+
+```
+
+
+### T2
+```{r YSI DysT2}
+####### Time 1 change in O2 ################
+
+#separate time points
+Dys.YSI.T2<- Dys.YSI[(Dys.YSI$Time.point=="T2"),]
+
+#calculate NEP for T1
+T2.Prod<-Dys.YSI.T2[(Dys.YSI.T2$Date == "2023-07-31"),] # dawn and dusk for 12h period
+T2.Dawn1<-T2.Prod[(T2.Prod$Dawn..dusk == "dawn"),] # dawn-1 measurements
+T2.Dusk2<-T2.Prod[(T2.Prod$Dawn..dusk == "dusk"),] # dusk-2 measurements
+
+T2.Dusk1<-Dys.YSI.T2[(Dys.YSI.T2$Date == "2023-07-30"),] # dusk-1 measurements, previous PM
+
+# make new dataframe
+T2.O2<-(T2.Dawn1[,c(1:7)]) 
+T2.O2$dusk1<-T2.Dusk1$DO..percent
+T2.O2$dawn1<-T2.Dawn1$DO..percent
+T2.O2$dusk2<-T2.Dusk2$DO..percent
+
+
+# NER = dusk1 - dawn1 (PM to AM, O2 change of day 1)
+# NEP = dusk2 - dawn1 (PM to AM, O2 change of day 2)
+
+T2.O2<- dplyr::mutate(T2.O2, 
+                NEP=dusk2 - dawn1,
+                NER=dawn1 - dusk1) 
+```
+
+* plot the figure
+
+Time 2 plot
+```{r Dysb T2 DO plot}
+########## 
+
+# Time 2 plots
+#################
+T2.PM1<-ggplot(T2.O2, aes(x=Treatment, y=dusk1, color=Treatment, fill=Treatment)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ggtitle("T2.dusk1")+
+  ylab(expression(paste("O"[2],"%"))) +
+  coord_cartesian(ylim=c(0, 160)) +
+  xlab("Detritus Type") +
+  Fig.formatting + theme(legend.position = "none")
+
+T2.AM1<-ggplot(T2.O2, aes(x=Treatment, y=dawn1, color=Treatment, fill=Treatment)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1"))+
+  scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ggtitle("T2.dawn1")+
+  ylab(expression(paste("O"[2],"%"))) +
+  coord_cartesian(ylim=c(0, 160)) +
+  xlab("Detritus Type") +
+  Fig.formatting + theme(legend.position = "none")
+
+T2.PM2<-ggplot(T2.O2, aes(x=Treatment, y=dusk2, color=Treatment, fill=Treatment)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ggtitle("T2.dusk2")+
+  ylab(expression(paste("O"[2],"%"))) +
+  coord_cartesian(ylim=c(0, 160)) +
+  xlab("Detritus Type") + 
+  Fig.formatting + theme(legend.position = "none")
+
+extract.legend <- get_legend(
+  # create some space to the left of the legend
+  T1.PM1 + theme(legend.box.margin = margin(0, 0, 0, 10)))
+
+O2.T2<-plot_grid(
+  T2.PM1+ theme(legend.position = "none"), 
+  T2.AM1+ theme(legend.position = "none"), 
+  T2.PM2+ theme(legend.position = "none"),
+  rel_widths = c(8,8,8), ncol=3)
+
+ggsave("figures/Dysb.O2.T2.pdf", height=5, width=9)
+
+#################################
+############################################
+# net ecosystem production and respiration
+
+#Time 2 NEP
+NEP.T2<-ggplot(T2.O2, aes(x=Treatment, y=NEP, color=Treatment, fill=Treatment)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ylab(expression(paste("Net Production (", Delta, "O"[2],"%)"))) +
+  coord_cartesian(ylim=c(-20, 80)) +
+  xlab("Detritus Type") +
+  Fig.formatting + theme(legend.position = "none")
+
+
+#Time 2 NER
+NER.T2<-ggplot(T2.O2, aes(x=Treatment, y=NER, color=Treatment, fill=Treatment)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  scale_fill_manual(values = c("lightsteelblue", "lightcoral", "lightgoldenrod2", "lightskyblue", "tan1")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ylab(expression(paste("Net Respiration (", Delta, "O"[2],"%)"))) +
+  coord_cartesian(ylim=c(-80, 20)) +
+  xlab("Detritus Type") +
+  Fig.formatting
+
+
+O2.change.T2<-plot_grid(
+  NEP.T2+ theme(legend.position = "none") + ggtitle("Time 2"), 
+  NER.T2+ theme(legend.position = "none") + ggtitle(""),
+  rel_widths = c(8,8), ncol=2)
+
+ggsave("figures/Dysb.O2.change.T2.pdf", height=5, width=8)
 
 ```
 
@@ -340,6 +464,39 @@ MetaP.YSI$Nutrients<-droplevels(MetaP.YSI$Nutrients)
 # rename one level
 MetaP.YSI$Site<-droplevels(MetaP.YSI$Site)
 
+MetaP.YSI$Nutrients<-factor(MetaP.YSI$Nutrients, levels=c("LN", "Plant"))
+
+levels(MetaP.YSI$Nutrients) <- list(
+  "Low-Nutr"="LN", "Plant-Nutr"="Plant")
+
+MetaP.YSI$Site<-factor(MetaP.YSI$Site, levels=c("Convict", "Crowley", "control"))
+MetaP.YSI$Treatment<-factor(MetaP.YSI$Treatment, levels=c("LN-Conv", "LN-Crow", "LN-NA",
+                                                    "Plant-Conv", "Plant-Crow", "Plant-NA"))
+
+
+#########################################################
+Fig.formatting<-(theme_classic()) +
+  theme(text=element_text(size=10),
+        axis.line=element_blank(),
+        legend.text.align = 0,
+        legend.text=element_text(size=10),
+        #legend.title = element_blank(),
+        panel.border = element_rect(fill=NA, colour = "black", size=1),
+        aspect.ratio=1, 
+        axis.ticks.length=unit(0.25, "cm"),
+        axis.text.y=element_text(
+          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=10), 
+        axis.text.x=element_text(
+          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=8)) +
+  theme(legend.key.size = unit(0.4, "cm")) +
+  theme(aspect.ratio=1.3) +
+  theme(panel.spacing=unit(c(0, 0, 0, 0), "cm"))
+
+#########################################################
+```
+
+### Time 0.5
+```{r MetaP YSI T05}
 #separate time points
 MetaP.YSI.T05<- MetaP.YSI[(MetaP.YSI$Time.point=="T0.5"),]
 
@@ -368,37 +525,9 @@ T05.O2<- mutate(T05.O2,
 Time 0.5 plot
 ```{r MetaP T0.5 DO plot}
 ########## 
-Fig.formatting<-(theme_classic()) +
-  theme(text=element_text(size=10),
-        axis.line=element_blank(),
-        legend.text.align = 0,
-        legend.text=element_text(size=10),
-        #legend.title = element_blank(),
-        panel.border = element_rect(fill=NA, colour = "black", size=1),
-        aspect.ratio=1, 
-        axis.ticks.length=unit(0.25, "cm"),
-        axis.text.y=element_text(
-          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=10), 
-        axis.text.x=element_text(
-          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=8)) +
-  theme(legend.key.size = unit(0.4, "cm")) +
-  theme(aspect.ratio=1.3) +
-  theme(panel.spacing=unit(c(0, 0, 0, 0), "cm"))
-
-#########################################################
-############################################################################
-###############################################################################################
 
 # Time 0.5 plots
 #################
-T05.O2$Nutrients<-factor(T05.O2$Nutrients, levels=c("LN", "Plant"))
-
-levels(T05.O2$Nutrients) <- list(
-  "Low-Nutr"="LN", "Plant-Nutr"="Plant")
-
-T05.O2$Site<-factor(T05.O2$Site, levels=c("Convict", "Crowley", "control"))
-T05.O2$Treatment<-factor(T05.O2$Treatment, levels=c("LN-Conv", "LN-Crow", "LN-NA",
-                                                    "Plant-Conv", "Plant-Crow", "Plant-NA"))
 
 T05.PM1<-ggplot(T05.O2, aes(x=Nutrients, y=dusk1, color=Site, fill=Site)) + 
   geom_boxplot(alpha=0.2) +
@@ -408,7 +537,7 @@ T05.PM1<-ggplot(T05.O2, aes(x=Nutrients, y=dusk1, color=Site, fill=Site)) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T05.dusk1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Nutrient Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -420,7 +549,7 @@ T05.AM1<-ggplot(T05.O2, aes(x=Nutrients, y=dawn1, color=Site, fill=Site)) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T05.dawn1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Nurient Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -432,7 +561,7 @@ T05.PM2<-ggplot(T05.O2, aes(x=Nutrients, y=dusk2, color=Site, fill=Site)) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T05.dusk2")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Nurient Type") + 
   Fig.formatting 
 
@@ -460,7 +589,7 @@ NEP.T05<-ggplot(T05.O2, aes(x=Nutrients, y=NEP, color=Site, fill=Site)) +
   scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Production (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-20, 50)) +
+  coord_cartesian(ylim=c(-20, 60)) +
   xlab("Nutrient Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -473,7 +602,7 @@ NER.T05<-ggplot(T05.O2, aes(x=Nutrients, y=NER, color=Site, fill=Site)) +
   scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Respiration (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-40, 20)) +
+  coord_cartesian(ylim=c(-60, 20)) +
   xlab("Nutrient Type") +
   Fig.formatting
 
@@ -518,37 +647,9 @@ T1.O2<- mutate(T1.O2,
 Time 1 plot
 ```{r MetaP T1 DO plot}
 ########## 
-Fig.formatting<-(theme_classic()) +
-  theme(text=element_text(size=10),
-        axis.line=element_blank(),
-        legend.text.align = 0,
-        legend.text=element_text(size=10),
-        #legend.title = element_blank(),
-        panel.border = element_rect(fill=NA, colour = "black", size=1),
-        aspect.ratio=1, 
-        axis.ticks.length=unit(0.25, "cm"),
-        axis.text.y=element_text(
-          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=10), 
-        axis.text.x=element_text(
-          margin=unit(c(0.5, 0.5, 0.5, 0.5), "cm"), colour="black", size=8)) +
-  theme(legend.key.size = unit(0.4, "cm")) +
-  theme(aspect.ratio=1.3) +
-  theme(panel.spacing=unit(c(0, 0, 0, 0), "cm"))
 
-#########################################################
-############################################################################
-###############################################################################################
-
-# Time 0.5 plots
+# Time 1 plots
 #################
-T1.O2$Nutrients<-factor(T1.O2$Nutrients, levels=c("LN", "Plant"))
-
-levels(T1.O2$Nutrients) <- list(
-  "Low-Nutr"="LN", "Plant-Nutr"="Plant")
-
-T1.O2$Site<-factor(T1.O2$Site, levels=c("Convict", "Crowley", "control"))
-T1.O2$Treatment<-factor(T1.O2$Treatment, levels=c("LN-Conv", "LN-Crow", "LN-NA",
-                                                    "Plant-Conv", "Plant-Crow", "Plant-NA"))
 
 T1.PM1<-ggplot(T1.O2, aes(x=Nutrients, y=dusk1, color=Site, fill=Site)) + 
   geom_boxplot(alpha=0.2) +
@@ -558,7 +659,7 @@ T1.PM1<-ggplot(T1.O2, aes(x=Nutrients, y=dusk1, color=Site, fill=Site)) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T1.dusk1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Nutrient Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -570,7 +671,7 @@ T1.AM1<-ggplot(T1.O2, aes(x=Nutrients, y=dawn1, color=Site, fill=Site)) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T1.dawn1")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Nurient Type") +
   Fig.formatting + theme(legend.position = "none")
 
@@ -582,7 +683,7 @@ T1.PM2<-ggplot(T1.O2, aes(x=Nutrients, y=dusk2, color=Site, fill=Site)) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ggtitle("T1.dusk2")+
   ylab(expression(paste("O"[2],"%"))) +
-  coord_cartesian(ylim=c(0, 140)) +
+  coord_cartesian(ylim=c(0, 160)) +
   xlab("Nurient Type") + 
   Fig.formatting 
 
@@ -602,7 +703,7 @@ ggsave("figures/MetaP.O2.T1.pdf", height=4, width=9)
 ############################################
 # net ecosystem production and respiration
 
-#Time 0.5 NEP
+#Time 1 NEP
 NEP.T1<-ggplot(T1.O2, aes(x=Nutrients, y=NEP, color=Site, fill=Site)) + 
   geom_boxplot(alpha=0.2) +
   geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
@@ -610,12 +711,12 @@ NEP.T1<-ggplot(T1.O2, aes(x=Nutrients, y=NEP, color=Site, fill=Site)) +
   scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Production (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-20, 50)) +
+  coord_cartesian(ylim=c(-20, 60)) +
   xlab("Nutrient Type") +
   Fig.formatting + theme(legend.position = "none")
 
 
-#Time 0.5 NER
+#Time 1 NER
 NER.T1<-ggplot(T1.O2, aes(x=Nutrients, y=NER, color=Site, fill=Site)) + 
   geom_boxplot(alpha=0.2) +
   geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
@@ -623,17 +724,142 @@ NER.T1<-ggplot(T1.O2, aes(x=Nutrients, y=NER, color=Site, fill=Site)) +
   scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
   geom_hline(yintercept=0, linetype="longdash", color = "gray") +
   ylab(expression(paste("Net Respiration (", Delta, "O"[2],"%)"))) +
-  coord_cartesian(ylim=c(-40, 20)) +
+  coord_cartesian(ylim=c(-60, 20)) +
   xlab("Nutrient Type") +
   Fig.formatting
 
 
 O2.change.T1<-plot_grid(
-  NEP.T1+ theme(legend.position = "none") + ggtitle("Time 0.5"), 
+  NEP.T1+ theme(legend.position = "none") + ggtitle("Time 1"), 
   NER.T1+ theme(legend.position = "none") + ggtitle(""),
   rel_widths = c(8,8), ncol=2)
 
 ggsave("figures/MetaP.O2.change.T1.pdf", height=5, width=8)
 
+```
+
+
+### T2
+```{r YSI MP T1rep}
+####### Time 1 change in O2 ################
+
+#separate time points
+MP.YSI.T2<- MetaP.YSI[(MetaP.YSI$Time.point=="T2"),]
+
+#calculate NEP for T1
+T2.Prod<-MP.YSI.T2[(MP.YSI.T2$Date == "2023-07-31"),] # dawn and dusk for 12h period
+T2.Dawn1<-T2.Prod[(T2.Prod$Dawn..dusk == "dawn"),] # dawn-1 measurements
+T2.Dusk2<-T2.Prod[(T2.Prod$Dawn..dusk == "dusk"),] # dusk-2 measurements
+
+T2.Dusk1<-MP.YSI.T2[(MP.YSI.T2$Date == "2023-07-30"),] # dusk-1 measurements, previous PM
+
+# make new dataframe
+T2.O2<-(T2.Dawn1[,c(1:7)]) 
+T2.O2$dusk1<-T2.Dusk1$DO..percent
+T2.O2$dawn1<-T2.Dawn1$DO..percent
+T2.O2$dusk2<-T2.Dusk2$DO..percent
+
+
+# NER = dusk1 - dawn1 (PM to AM, O2 change of day 1)
+# NEP = dusk2 - dawn1 (PM to AM, O2 change of day 2)
+
+T2.O2<- dplyr::mutate(T2.O2, 
+                NEP=dusk2 - dawn1,
+                NER=dawn1 - dusk1) 
+```
+
+* plot the figure
+
+Time 2 plot
+```{r MP T2 DO plot}
+########## 
+
+# Time 2 plots
+#################
+
+T2.PM1<-ggplot(T2.O2, aes(x=Nutrients, y=dusk1, color=Site, fill=Site)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ggtitle("T2.dusk1")+
+  ylab(expression(paste("O"[2],"%"))) +
+  coord_cartesian(ylim=c(0, 160)) +
+  xlab("Nutrient Type") +
+  Fig.formatting + theme(legend.position = "none")
+
+T2.AM1<-ggplot(T2.O2, aes(x=Nutrients, y=dawn1, color=Site, fill=Site)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ggtitle("T2.dawn1")+
+  ylab(expression(paste("O"[2],"%"))) +
+  coord_cartesian(ylim=c(0, 160)) +
+  xlab("Nurient Type") +
+  Fig.formatting + theme(legend.position = "none")
+
+T2.AM1<-ggplot(T2.O2, aes(x=Nutrients, y=dusk2, color=Site, fill=Site)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ggtitle("T2.dusk2")+
+  ylab(expression(paste("O"[2],"%"))) +
+  coord_cartesian(ylim=c(0, 160)) +
+  xlab("Nurient Type") + 
+  Fig.formatting 
+
+extract.legend <- get_legend(
+  # create some space to the left of the legend
+  T2.PM1 + theme(legend.box.margin = margin(0, 0, 0, 10)))
+
+O2.T2<-plot_grid(
+  T2.PM1+ theme(legend.position = "none"), 
+  T2.AM1+ theme(legend.position = "none"), 
+  T2.PM2+ theme(legend.position = "none"),
+  rel_widths = c(8,8,8), ncol=3)
+
+ggsave("figures/MetaP.O2.T2.pdf", height=4, width=9)
+
+#################################
+############################################
+# net ecosystem production and respiration
+
+#Time 1 NEP
+NEP.T2<-ggplot(T2.O2, aes(x=Nutrients, y=NEP, color=Site, fill=Site)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ylab(expression(paste("Net Production (", Delta, "O"[2],"%)"))) +
+  coord_cartesian(ylim=c(-20, 80)) +
+  xlab("Nutrient Type") +
+  Fig.formatting + theme(legend.position = "none")
+
+
+#Time 1 NER
+NER.T2<-ggplot(T2.O2, aes(x=Nutrients, y=NER, color=Site, fill=Site)) + 
+  geom_boxplot(alpha=0.2) +
+  geom_point(pch = 21, position = position_jitterdodge(), alpha=0.6) +
+  scale_color_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  scale_fill_manual(values = c("lightblue", "darkolivegreen3", "gray")) +
+  geom_hline(yintercept=0, linetype="longdash", color = "gray") +
+  ylab(expression(paste("Net Respiration (", Delta, "O"[2],"%)"))) +
+  coord_cartesian(ylim=c(-60, 20)) +
+  xlab("Nutrient Type") +
+  Fig.formatting
+
+
+O2.change.T2<-plot_grid(
+  NEP.T2+ theme(legend.position = "none") + ggtitle("Time 2"), 
+  NER.T2+ theme(legend.position = "none") + ggtitle(""),
+  rel_widths = c(8,8), ncol=2)
+
+ggsave("figures/MetaP.O2.change.T2.pdf", height=5, width=8)
 ```
 
